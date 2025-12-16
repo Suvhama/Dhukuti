@@ -1,0 +1,207 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dhukuti/providers/market_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+class AdminDashboard extends StatelessWidget {
+  const AdminDashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Admin Dashboard", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+
+          // Price Card
+          Consumer<MarketProvider>(
+            builder: (context, market, child) {
+              final price = market.currentPrice;
+              final isLoading = market.isLoadingPrice;
+              
+              return Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Silver Rate (Today)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      if (isLoading)
+                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      else if (price == null)
+                        const Text("Error", style: TextStyle(color: Colors.red))
+                      else
+                        Text("Rs. ${price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          
+          // Stats Row
+          Row(
+            children: [
+              _StatCard(
+                title: "Total Users",
+                stream: FirebaseFirestore.instance.collection('users').snapshots(),
+                builder: (snapshot) => "${snapshot.docs.length}",
+              ),
+              const SizedBox(width: 10),
+              _StatCard(
+                title: "Total Transactions",
+                stream: FirebaseFirestore.instance.collection('transactions').snapshots(),
+                builder: (snapshot) => "${snapshot.docs.length}",
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          const Text("Recent Transactions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('transactions')
+              .orderBy('timestamp', descending: true)
+              .limit(10)
+              .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const CircularProgressIndicator();
+              final docs = snapshot.data!.docs;
+              
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final type = data['type']?.toString().toUpperCase() ?? "UNKNOWN";
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        type.contains('BUY') ? Icons.arrow_downward : Icons.arrow_upward,
+                        color: type.contains('BUY') ? Colors.green : Colors.red,
+                      ),
+                      title: Text("$type - ${data['quantityTola']} Tola"),
+                      subtitle: Text("ID: ${docs[index].id.substring(0, 8)}..."),
+                      trailing: Text("Rs. ${data['totalAmount']}"),
+                      onTap: () => _showUserDetails(context, data['userId']),
+                    ),
+                  );
+                },
+              );
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showUserDetails(BuildContext context, String? userId) {
+    if (userId == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("User Details", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return const Text("Error loading user details", style: TextStyle(color: Colors.red));
+                  } else if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text("User not found");
+                  }
+                  
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  return Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                        _DetailRow(icon: Icons.person, label: "Name", value: data['name'] ?? "N/A"),
+                        _DetailRow(icon: Icons.phone, label: "Phone", value: data['phone'] ?? "N/A"),
+                        _DetailRow(icon: Icons.location_on, label: "Address", value: data['address'] ?? "N/A"),
+                        _DetailRow(icon: Icons.email, label: "Email", value: data['email'] ?? "N/A"),
+                     ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  
+  const _DetailRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey),
+          const SizedBox(width: 10),
+          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String title;
+  final Stream<QuerySnapshot> stream;
+  final String Function(QuerySnapshot) builder;
+
+  const _StatCard({required this.title, required this.stream, required this.builder});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        color: Colors.blue.shade50,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(title, style: const TextStyle(fontSize: 14)),
+              const SizedBox(height: 8),
+              StreamBuilder<QuerySnapshot>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Text("-");
+                  return Text(
+                    builder(snapshot.data!),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

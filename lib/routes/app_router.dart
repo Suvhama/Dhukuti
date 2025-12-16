@@ -1,9 +1,10 @@
 import 'package:dhukuti/auth/login_page.dart';
-import 'package:dhukuti/dashboard/dashboard_page.dart';
+
 import 'package:go_router/go_router.dart';
 import '../routes/app_routes.dart';
 import '../splash/splash_page.dart';
 import '../auth/auth_state.dart';
+import 'package:dhukuti/screens/main_screen.dart';
 
 GoRouter createRouter(AuthState authState) {
   return GoRouter(
@@ -34,9 +35,11 @@ GoRouter createRouter(AuthState authState) {
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
       ),
+
+
       GoRoute(
         path: AppRoutes.dashboard,
-        builder: (context, state) => DashboardPage(),
+        builder: (context, state) => const MainScreen(),
       ),
     ],
   );

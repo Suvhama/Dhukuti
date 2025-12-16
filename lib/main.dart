@@ -4,14 +4,20 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'routes/app_router.dart';
 import 'auth/auth_state.dart';
+import 'providers/user_provider.dart';
+import 'providers/market_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthState(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthState()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => MarketProvider()),
+      ],
       child: const DhukutiApp(),
     ),
   );
