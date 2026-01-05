@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dhukuti/providers/market_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class AdminDashboard extends StatelessWidget {
@@ -14,6 +15,12 @@ class AdminDashboard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("Admin Dashboard", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+
+          // Market Control Section
+          const Text("Market Control", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _buildMarketControlCard(context),
           const SizedBox(height: 20),
 
           // Price Card
@@ -96,6 +103,98 @@ class AdminDashboard extends StatelessWidget {
                 },
               );
             },
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMarketControlCard(BuildContext context) {
+    return Consumer<MarketProvider>(
+      builder: (context, market, _) {
+        final isMsg = market.marketStatusMessage;
+        final isOpen = market.isMarketOpen;
+
+        return Card(
+          color: isOpen ? Colors.green.shade50 : Colors.red.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(isOpen ? Icons.check_circle : Icons.cancel, color: isOpen ? Colors.green : Colors.red),
+                    const SizedBox(width: 10),
+                    Text(isMsg, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isOpen ? Colors.green : Colors.red)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    if (isOpen)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.block),
+                        label: const Text("Close Today"),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                        onPressed: () => _confirmAction(context, "Close Market Today?", () {
+                          market.setMarketOverride(date: DateTime.now(), isClosed: true);
+                        }),
+                      ),
+                    
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.calendar_today),
+                      label: const Text("Schedule Closure"),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(const Duration(days: 1)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                           // ignore: use_build_context_synchronously
+                           _confirmAction(context, "Close Market on ${DateFormat('MMM d').format(date)}?", () {
+                             market.setMarketOverride(date: date, isClosed: true);
+                           });
+                        }
+                      },
+                    ),
+
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      label: const Text("Reset Overrides"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.black),
+                      onPressed: () => _confirmAction(context, "Clear all manual overrides?", () {
+                        market.clearMarketOverride();
+                      }),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmAction(BuildContext context, String title, Function action) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: const Text("Are you sure you want to perform this action?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              action();
+            },
+            child: const Text("Confirm"),
           )
         ],
       ),
@@ -205,3 +304,4 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
