@@ -18,9 +18,24 @@ android {
         versionName = "1.0"
     }
 
+     signingConfigs {
+        create("release") {
+            storeFile = file("dhukuti-release.jks") // app/ folder
+            storePassword = "981362" // replace with your password
+            keyAlias = "dhukuti"
+            keyPassword = "981362" // replace with your key password
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false 
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
