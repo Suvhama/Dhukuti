@@ -20,6 +20,8 @@ class _TradeTabState extends State<TradeTab> {
   late Timer _timer;
   DateTime _currentTime = DateTime.now();
 
+  String _metalType = 'silver'; // 'gold' or 'silver'
+
   @override
   void initState() {
     super.initState();
@@ -57,10 +59,11 @@ class _TradeTabState extends State<TradeTab> {
       await context.read<MarketProvider>().executeTrade(
         userId: user.uid,
         type: type,
+        metalType: _metalType,
         quantityTola: qty,
       );
       if (mounted) {
-        String msg = "${type.name.toUpperCase()} Success!";
+        String msg = "${_metalType.toUpperCase()} ${type.name.toUpperCase()} Success!";
         if (type == TransactionType.sell) {
           msg += " (1% fee deducted)";
         }
@@ -77,8 +80,8 @@ class _TradeTabState extends State<TradeTab> {
   }
 
   Future<void> _launchWhatsApp() async {
-    const phoneNumber = '+9779813629126';
-    const message = 'Hello,admin i want to buy sell Silver, i am here to inquiry about my buy/ sell Payments.';
+    const phoneNumber = '+9779851239186';
+    final message = 'Hello Admin I want to Buy/Sell ${_metalType.toUpperCase()}, I am here to Inquiry about my Buy/Sell Payments.';
     final url = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
     
     if (await canLaunchUrl(url)) {
@@ -93,16 +96,22 @@ class _TradeTabState extends State<TradeTab> {
   @override
   Widget build(BuildContext context) {
     final marketProvider = context.watch<MarketProvider>();
-    final price = marketProvider.currentPrice;
+    final silverPrice = marketProvider.currentSilverPrice;
+    final goldPrice = marketProvider.currentGoldPrice;
     final isMarketOpen = marketProvider.isMarketOpen;
     final marketStatusMsg = marketProvider.marketStatusMessage;
 
-    if (price == null) {
+    final currentPrice = _metalType == 'gold' ? goldPrice : silverPrice;
+
+    if (currentPrice == null) {
       return const Center(child: Text("Price currently unavailable"));
     }
 
     final formattedDate = DateFormat('EEEE, MMM d, yyyy').format(_currentTime);
     final formattedTime = DateFormat('h:mm:ss a').format(_currentTime);
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -111,23 +120,23 @@ class _TradeTabState extends State<TradeTab> {
         child: const Icon(Icons.chat, color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
               elevation: 2,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: EdgeInsets.all(screenWidth * 0.04),
                 child: Column(
                   children: [
-                    Text(formattedDate, style: const TextStyle(fontSize: 16)),
+                    Text(formattedDate, style: TextStyle(fontSize: screenWidth * 0.04)),
                     const SizedBox(height: 4),
-                    Text(formattedTime, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(formattedTime, style: TextStyle(fontSize: screenWidth * 0.06, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     const Divider(),
                     const SizedBox(height: 10),
-                    const Text("Trading Hours: 11:15 AM - 5:00 PM", style: TextStyle(color: Colors.grey)),
+                    Text("Trading Hours: 11:15 AM - 5:00 PM", style: TextStyle(color: Colors.grey, fontSize: screenWidth * 0.03)),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -146,6 +155,7 @@ class _TradeTabState extends State<TradeTab> {
                           style: TextStyle(
                             color: isMarketOpen ? Colors.green : Colors.red,
                             fontWeight: FontWeight.bold,
+                            fontSize: screenWidth * 0.04,
                           ),
                         ),
                       ],
@@ -155,18 +165,36 @@ class _TradeTabState extends State<TradeTab> {
               ),
             ),
             
-            const SizedBox(height: 20),
+            SizedBox(height: screenHeight * 0.02),
 
-            Center(child: Text("Today's Rate: Rs. $price / Tola", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-            const SizedBox(height: 30),
+            // 🔄 Metal Selector
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'silver', label: Text("Silver"), icon: Icon(Icons.diamond)),
+                ButtonSegment(value: 'gold', label: Text("Gold"), icon: Icon(Icons.workspace_premium)),
+              ],
+              selected: {_metalType},
+              onSelectionChanged: (val) => setState(() => _metalType = val.first),
+            ),
+
+            SizedBox(height: screenHeight * 0.03),
+
+            Center(
+              child: Text(
+                "Today's Rate: Rs. ${currentPrice.toStringAsFixed(2)} / Tola",
+                style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.04),
             
             if (isMarketOpen) ...[
               TextField(
                 controller: _quantityController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: "Quantity (Tola)",
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: "Quantity (${_metalType.toUpperCase()} Tola)",
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.shopping_basket_outlined),
                 ),
               ),
               const SizedBox(height: 20),
@@ -177,17 +205,25 @@ class _TradeTabState extends State<TradeTab> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green, 
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
                         onPressed: () => _handleTrade(TransactionType.buy),
-                        child: const Text("BUY SILVER"),
+                        child: const Text("BUY NOW"),
                       ),
                     ),
                     const SizedBox(width: 20),
                     Expanded(
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red, 
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
                         onPressed: () => _handleTrade(TransactionType.sell),
-                        child: const Text("SELL SILVER"),
+                        child: const Text("SELL NOW"),
                       ),
                     ),
                   ],

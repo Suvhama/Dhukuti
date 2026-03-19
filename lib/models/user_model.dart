@@ -45,4 +45,26 @@ class UserModel {
       'createdAt': createdAt.millisecondsSinceEpoch,
     };
   }
+
+  UserModel copyWith({
+    String? uid,
+    String? phone,
+    String? name,
+    String? address,
+    String? email,
+    String? photoUrl,
+    bool? isAdmin,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      phone: phone ?? this.phone,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      email: email ?? this.email,
+      photoUrl: photoUrl ?? this.photoUrl,
+      isAdmin: isAdmin ?? this.isAdmin,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

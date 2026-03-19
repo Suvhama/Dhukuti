@@ -9,40 +9,33 @@ class AdminDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(screenWidth * 0.04),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Admin Dashboard", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-
-          // Market Control Section
-          const Text("Market Control", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("Market Control", style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           _buildMarketControlCard(context),
           const SizedBox(height: 20),
 
-          // Price Card
           Consumer<MarketProvider>(
             builder: (context, market, child) {
-              final price = market.currentPrice;
+              final silverPrice = market.currentSilverPrice;
+              final goldPrice = market.currentGoldPrice;
               final isLoading = market.isLoadingPrice;
               
               return Card(
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      const Text("Silver Rate (Today)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      if (isLoading)
-                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      else if (price == null)
-                        const Text("Error", style: TextStyle(color: Colors.red))
-                      else
-                        Text("Rs. ${price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                       _buildRateRow("Silver Rate", silverPrice, isLoading),
+                       const Divider(),
+                       _buildRateRow("Gold Rate", goldPrice, isLoading),
                     ],
                   ),
                 ),
@@ -50,8 +43,6 @@ class AdminDashboard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20),
-          
-          // Stats Row
           Row(
             children: [
               _StatCard(
@@ -242,6 +233,21 @@ class AdminDashboard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRateRow(String title, double? price, bool isLoading) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        if (isLoading)
+          const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+        else if (price == null)
+          const Text("Error", style: TextStyle(color: Colors.red))
+        else
+          Text("Rs. ${price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+      ],
     );
   }
 }

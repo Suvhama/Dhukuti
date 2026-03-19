@@ -36,21 +36,25 @@ class UserProvider extends ChangeNotifier {
           .get();
 
       if (doc.exists) {
+        // 🔐 Admin status comes from Firestore
         _userModel = UserModel.fromMap(doc.data()!, user.uid);
       } else {
-        // Create new user doc if doesn't exist
+        // New users are NOT admin by default
         final newUser = UserModel(
           uid: user.uid,
           phone: user.phoneNumber ?? '',
           createdAt: DateTime.now(),
-          isAdmin: user.phoneNumber == '+9779813629126', // Admin Check
+          isAdmin: false,
         );
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .set(newUser.toMap());
+
         _userModel = newUser;
       }
+
       notifyListeners();
     } catch (e) {
       debugPrint("Error fetching user details: $e");
@@ -59,9 +63,13 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateUserProfile({String? name, String? address, String? email}) async {
+  Future<void> updateUserProfile({
+    String? name,
+    String? address,
+    String? email,
+  }) async {
     if (_userModel == null) return;
-    
+
     try {
       final updates = <String, dynamic>{};
       if (name != null) updates['name'] = name;
@@ -72,18 +80,13 @@ class UserProvider extends ChangeNotifier {
           .collection('users')
           .doc(_userModel!.uid)
           .update(updates);
-      
-      // Refresh local model
-      _userModel = UserModel(
-        uid: _userModel!.uid,
-        phone: _userModel!.phone,
-        name: name ?? _userModel!.name,
-        address: address ?? _userModel!.address,
-        email: email ?? _userModel!.email,
-        photoUrl: _userModel!.photoUrl,
-        isAdmin: _userModel!.isAdmin,
-        createdAt: _userModel!.createdAt,
+
+      _userModel = _userModel!.copyWith(
+        name: name,
+        address: address,
+        email: email,
       );
+
       notifyListeners();
     } catch (e) {
       debugPrint("Error updating profile: $e");
