@@ -1,8 +1,9 @@
-import 'package:dhukuti/providers/user_provider.dart';
+import 'package:dhukuti/screens/kyc/kyc_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:dhukuti/models/user_model.dart';
+import 'package:dhukuti/providers/user_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../routes/app_routes.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -144,6 +145,61 @@ class _ProfileTabState extends State<ProfileTab> {
                   _buildField("Email", _emailController, Icons.email),
                   
                   const SizedBox(height: 30),
+
+                  // 🛡️ KYC Verification Section
+                  if (!_editing) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "KYC Verification",
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              _getStatusBadge(user.verificationStatus),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _getStatusMessage(user.verificationStatus),
+                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                          ),
+                          if (user.verificationStatus != 'verified' && user.verificationStatus != 'pending') ...[
+                            const SizedBox(height: 15),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                   Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const KYCScreen()),
+                                  );
+                                },
+                                icon: const Icon(Icons.shield_outlined, size: 18),
+                                label: Text(user.verificationStatus == 'rejected' ? "Re-submit KYC" : "Complete KYC"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context).primaryColor,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
                   
                   if (_editing)
                     Row(
@@ -182,6 +238,67 @@ class _ProfileTabState extends State<ProfileTab> {
         ),
       ),
     );
+  }
+
+  Widget _getStatusBadge(String status) {
+    Color color;
+    String label;
+    IconData icon;
+
+    switch (status) {
+      case 'verified':
+        color = Colors.green;
+        label = "Verified";
+        icon = Icons.verified;
+        break;
+      case 'pending':
+        color = Colors.orange;
+        label = "Pending";
+        icon = Icons.hourglass_empty;
+        break;
+      case 'rejected':
+        color = Colors.red;
+        label = "Rejected";
+        icon = Icons.cancel;
+        break;
+      default:
+        color = Colors.grey;
+        label = "Unverified";
+        icon = Icons.help_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getStatusMessage(String status) {
+    switch (status) {
+      case 'verified':
+        return "Your account is fully verified. You can now trade Gold and Silver.";
+      case 'pending':
+        return "Your documents are under review. This usually takes 24-48 hours.";
+      case 'rejected':
+        return "Your verification was rejected. Please check the reason and re-submit.";
+      default:
+        return "Complete your KYC verification to start trading Gold and Silver.";
+    }
   }
 
   Widget _buildField(String label, TextEditingController controller, IconData icon) {

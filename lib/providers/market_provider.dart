@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dhukuti/models/user_model.dart';
 import 'package:dhukuti/models/portfolio_model.dart';
 import 'package:dhukuti/models/transaction_model.dart';
 import 'package:dhukuti/services/price_service.dart';
+import 'package:dhukuti/utils/app_utils.dart';
 import 'package:flutter/foundation.dart';
 
 enum MarketStatus { open, closed, holiday }
@@ -158,17 +160,32 @@ class MarketProvider extends ChangeNotifier {
   }
 
   Future<void> executeTrade({
-    required String userId,
+    required UserModel user,
     required TransactionType type,
     required String metalType,
     required double quantityTola,
   }) async {
     if (!isMarketOpen) throw Exception("Market is currently closed.");
     
+    // User Verification Check
+    if (user.verificationStatus != 'verified') {
+      throw Exception("Your account is not verified for trading. Please complete KYC.");
+    }
+    
     final price = metalType == 'gold' ? _currentGoldPrice : _currentSilverPrice;
     if (price == null) throw Exception("Price not available");
     
     double totalAmount = quantityTola * price;
+    
+    // 1% Service Charge on PURCHASE
+    if (type == TransactionType.buy) {
+      totalAmount = AppUtils.calculateTotalWithFee(totalAmount); 
+    }
+    
+    // Keeping current 1% on SELL if it was there by design, 
+    // but the requirement explicitly mentions purchase.
+    // The previous implementation had: if (type == TransactionType.sell) { totalAmount = totalAmount * 0.99; }
+    // I'll keep it for now as it makes sense for business (spread/fee).
     if (type == TransactionType.sell) {
       totalAmount = totalAmount * 0.99; 
     }
@@ -176,7 +193,7 @@ class MarketProvider extends ChangeNotifier {
     final transactionId = FirebaseFirestore.instance.collection('transactions').doc().id;
     final transaction = TransactionModel(
       id: transactionId,
-      userId: userId,
+      userId: user.uid,
       type: type,
       metalType: metalType,
       quantityTola: quantityTola,
@@ -186,7 +203,7 @@ class MarketProvider extends ChangeNotifier {
     );
 
     await FirebaseFirestore.instance.runTransaction((tx) async {
-      final portRef = FirebaseFirestore.instance.collection('portfolios').doc(userId);
+      final portRef = FirebaseFirestore.instance.collection('portfolios').doc(user.uid);
       final portDoc = await tx.get(portRef);
       
       double silverQty = 0;
@@ -233,7 +250,7 @@ class MarketProvider extends ChangeNotifier {
       }
 
       final newPortfolio = PortfolioModel(
-        userId: userId,
+        userId: user.uid,
         totalSilverTola: silverQty,
         totalSilverInvestedAmount: silverInv,
         totalGoldTola: goldQty,
@@ -244,6 +261,6 @@ class MarketProvider extends ChangeNotifier {
       tx.set(portRef, newPortfolio.toMap()); 
     });
 
-    await fetchPortfolio(userId);
+    await fetchPortfolio(user.uid);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dhukuti/providers/market_provider.dart';
+import 'package:dhukuti/screens/admin/admin_kyc_review_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -57,6 +58,59 @@ class AdminDashboard extends StatelessWidget {
                 builder: (snapshot) => "${snapshot.docs.length}",
               ),
             ],
+          ),
+          
+          const SizedBox(height: 25),
+          const Text("Pending KYC Verifications", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('users')
+              .where('verificationStatus', isEqualTo: 'pending')
+              .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+              final docs = snapshot.data!.docs;
+              
+              if (docs.isEmpty) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: Text("No pending verifications", style: TextStyle(color: Colors.grey[600])),
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final userData = docs[index].data() as Map<String, dynamic>;
+                  return Card(
+                    child: ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(userData['name'] ?? "No Name"),
+                      subtitle: Text(userData['phone']),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AdminKYCReviewScreen(
+                              uid: docs[index].id,
+                              userData: userData,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
+            },
           ),
           
           const SizedBox(height: 20),

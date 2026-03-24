@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:dhukuti/models/transaction_model.dart';
+import 'package:dhukuti/models/user_model.dart';
 import 'package:dhukuti/providers/market_provider.dart';
 import 'package:dhukuti/providers/user_provider.dart';
+import 'package:dhukuti/screens/kyc/kyc_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -57,7 +59,7 @@ class _TradeTabState extends State<TradeTab> {
     
     try {
       await context.read<MarketProvider>().executeTrade(
-        userId: user.uid,
+        user: user,
         type: type,
         metalType: _metalType,
         quantityTola: qty,
@@ -103,6 +105,9 @@ class _TradeTabState extends State<TradeTab> {
 
     final currentPrice = _metalType == 'gold' ? goldPrice : silverPrice;
 
+    final user = context.watch<UserProvider>().userModel;
+    final isVerified = user?.verificationStatus == 'verified';
+
     if (currentPrice == null) {
       return const Center(child: Text("Price currently unavailable"));
     }
@@ -136,7 +141,7 @@ class _TradeTabState extends State<TradeTab> {
                     const SizedBox(height: 10),
                     const Divider(),
                     const SizedBox(height: 10),
-                    Text("Trading Hours: 11:15 AM - 5:00 PM", style: TextStyle(color: Colors.grey, fontSize: screenWidth * 0.03)),
+                    Text("Trading Hours: 11:00 AM - 5:00 PM", style: TextStyle(color: Colors.grey, fontSize: screenWidth * 0.03)),
                     const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -188,46 +193,86 @@ class _TradeTabState extends State<TradeTab> {
             SizedBox(height: screenHeight * 0.04),
             
             if (isMarketOpen) ...[
-              TextField(
-                controller: _quantityController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: "Quantity (${_metalType.toUpperCase()} Tola)",
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.shopping_basket_outlined),
+              if (isVerified) ...[
+                TextField(
+                  controller: _quantityController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: "Quantity (${_metalType.toUpperCase()} Tola)",
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.shopping_basket_outlined),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, 
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                const SizedBox(height: 20),
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green, 
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          onPressed: () => _handleTrade(TransactionType.buy),
+                          child: const Text("BUY NOW"),
                         ),
-                        onPressed: () => _handleTrade(TransactionType.buy),
-                        child: const Text("BUY NOW"),
                       ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red, 
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red, 
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                          ),
+                          onPressed: () => _handleTrade(TransactionType.sell),
+                          child: const Text("SELL NOW"),
                         ),
-                        onPressed: () => _handleTrade(TransactionType.sell),
-                        child: const Text("SELL NOW"),
                       ),
-                    ),
-                  ],
-                )
+                    ],
+                  ),
+              ] else ...[
+                // 🛡️ KYC Required Prompt
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.shield_outlined, size: 50, color: Colors.blue),
+                      const SizedBox(height: 15),
+                      const Text(
+                        "Verification Required",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "You must complete your KYC verification to start trading Gold and Silver.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Logic to switch to Profile Tab or open KYC Screen
+                          // For simplicity, let's open KYC Screen directly
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const KYCScreen()),
+                          );
+                        },
+                        child: const Text("Verify Now"),
+                      ),
+                    ],
+                  ),
+                ),
+              ]
             ] else ...[
                Container(
                  padding: const EdgeInsets.all(16),

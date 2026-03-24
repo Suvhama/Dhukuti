@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dhukuti/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -36,10 +38,8 @@ class UserProvider extends ChangeNotifier {
           .get();
 
       if (doc.exists) {
-        // 🔐 Admin status comes from Firestore
         _userModel = UserModel.fromMap(doc.data()!, user.uid);
       } else {
-        // New users are NOT admin by default
         final newUser = UserModel(
           uid: user.uid,
           phone: user.phoneNumber ?? '',
@@ -60,6 +60,84 @@ class UserProvider extends ChangeNotifier {
       debugPrint("Error fetching user details: $e");
       _errorMessage = e.toString();
       notifyListeners();
+    }
+  }
+
+  Future<void> submitKYC({
+    required File citizenshipFront,
+    required File citizenshipBack,
+    required File selfie,
+  }) async {
+    if (_userModel == null) return;
+
+    try {
+      final storageRef = FirebaseStorage.instance.ref();
+      final uid = _userModel!.uid;
+
+      final frontRef = storageRef.child('kyc/$uid/citizenship_front.jpg');
+      final backRef = storageRef.child('kyc/$uid/citizenship_back.jpg');
+      final selfieRef = storageRef.child('kyc/$uid/selfie.jpg');
+
+      await frontRef.putFile(citizenshipFront);
+      await backRef.putFile(citizenshipBack);
+      await selfieRef.putFile(selfie);
+
+      final frontUrl = await frontRef.getDownloadURL();
+      final backUrl = await backRef.getDownloadURL();
+      final selfieUrl = await selfieRef.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({
+        'verificationStatus': 'pending',
+        'citizenshipFrontUrl': frontUrl,
+        'citizenshipBackUrl': backUrl,
+        'selfieUrl': selfieUrl,
+      });
+
+      _userModel = _userModel!.copyWith(
+        verificationStatus: 'pending',
+        citizenshipFrontUrl: frontUrl,
+        citizenshipBackUrl: backUrl,
+        selfieUrl: selfieUrl,
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error submitting KYC: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updateKYCStatus({
+    required String uid,
+    required String status,
+    String? rejectionReason,
+  }) async {
+    try {
+      final updates = <String, dynamic>{
+        'verificationStatus': status,
+      };
+      if (rejectionReason != null) {
+        updates['rejectionReason'] = rejectionReason;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update(updates);
+
+      if (_userModel?.uid == uid) {
+        _userModel = _userModel!.copyWith(
+          verificationStatus: status,
+          rejectionReason: rejectionReason,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error updating KYC status: $e");
+      rethrow;
     }
   }
 

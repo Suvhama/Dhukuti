@@ -1,5 +1,6 @@
 import 'package:dhukuti/providers/user_provider.dart';
 import 'package:dhukuti/screens/admin/admin_dashboard.dart';
+import 'package:dhukuti/screens/chatbot/chatbot_screen.dart';
 import 'package:dhukuti/screens/history/transaction_history_screen.dart';
 import 'package:dhukuti/screens/home/home_tab.dart';
 import 'package:dhukuti/screens/portfolio/portfolio_tab.dart';
@@ -80,6 +81,17 @@ class _MainScreenState extends State<MainScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.chat_bubble_outline, size: 20, color: Colors.blue),
+                title: const Text("AI Assistant", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatbotScreen()),
                   );
                 },
               ),
