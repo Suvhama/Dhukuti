@@ -178,6 +178,31 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "Signup/Login with your PhoneNumber via OTP.",
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.032,
+                                  color: Colors.blue.shade800,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Text(
                         _codeSent ? 'Enter Verification Code' : 'Sign in with Phone',
                         style: TextStyle(fontSize: screenWidth * 0.05, fontWeight: FontWeight.w600),
@@ -264,4 +289,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-}
+} // samir bogati is my name and i am workign very hard everyday, i  do smoke weed everyday and i really want to quit this habit of mine, from now i will control myself and try to smoke only when i drink tea, then also i will be smoking about three to four times, but it is very cool to smoke , maybe cause i feel like i am one of a king=d 

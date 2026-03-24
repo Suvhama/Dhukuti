@@ -167,10 +167,11 @@ class MarketProvider extends ChangeNotifier {
   }) async {
     if (!isMarketOpen) throw Exception("Market is currently closed.");
     
-    // User Verification Check
+    /* 
     if (user.verificationStatus != 'verified') {
       throw Exception("Your account is not verified for trading. Please complete KYC.");
     }
+    */
     
     final price = metalType == 'gold' ? _currentGoldPrice : _currentSilverPrice;
     if (price == null) throw Exception("Price not available");

@@ -19,12 +19,23 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final String _knowledgeBase = """
 Dhukuti AI Assistant Knowledge Base:
 - Identity: You are the Dhukuti Assistant. You help users navigate gold/silver investments in Nepal.
-- Products: 24K Gold (99.9% pure) and .999 Fine Silver.
-- Trading Rules: Buying and selling are only available from 11:00 AM to 5:00 PM Nepal time, Sunday to Friday.
-- Fee Disclosure: Every purchase includes a 1% service charge. Always inform users of this fee during transaction inquiries.
-- Safety: All digital holdings are backed by physical reserves. Users can request physical delivery of their assets.
-- Compliance: You must never provide financial advice or price predictions. Your role is educational and operational.
-- Verification: Users must be admin-approved via Citizenship ID upload before they can trade.
+- Products: 
+  * 24K Gold: 99.9% pure physical gold.
+  * .999 Fine Silver: High-purity investment-grade silver.
+- Trading Rules: 
+  * Hours: 11:00 AM to 5:00 PM Nepal time.
+  * Days: Sunday to Friday (Closed on Saturdays).
+- Fee Disclosure: 
+  * Every transaction (both Buy and Sell) includes a 1% service charge. 
+  * This fee is used for vaulting, insurance, and platform maintenance.
+- Safety & Storage: 
+  * 1:1 Backed: Every gram of metal you own is physically stored in our secure vault.
+  * Physical Delivery: You can request home delivery or pickup of your physical gold/silver once your holdings reach standard weights.
+- Verification (KYC): 
+  * Required: You must be verified to start trading.
+  * Process: Go to the 'Profile' tab, upload your Citizenship (Front & Back) and a Selfie holding your ID.
+  * Approval: Admin usually reviews and approves KYC within 24-48 business hours.
+- Contact: Support is available via WhatsApp for payment inquiries or technical help.
 """;
 
   void _sendMessage() {
@@ -36,25 +47,34 @@ Dhukuti AI Assistant Knowledge Base:
       _controller.clear();
     });
 
-    // Simulate AI Response based on keywords (simple logic as placeholders for LLM)
-    String response = "I'm not sure about that. I can help you with trading hours, products, fees, or verification process.";
+    // Detailed AI Response logic based on expanded knowledge
+    String response = "I'm sorry, I don't have information on that topic. I can help with trading hours, products (Gold/Silver), fees, or the KYC verification process. What would you like to know?";
     
     final lowerText = text.toLowerCase();
-    if (lowerText.contains('hour') || lowerText.contains('time') || lowerText.contains('when')) {
-      response = "Trading is available from 11:00 AM to 5:00 PM Nepal time, Sunday to Friday.";
-    } else if (lowerText.contains('gold') || lowerText.contains('silver') || lowerText.contains('product')) {
-      response = "We offer 24K Gold (99.9% pure) and .999 Fine Silver.";
-    } else if (lowerText.contains('fee') || lowerText.contains('charge') || lowerText.contains('cost')) {
-      response = "Every purchase includes a 1% service charge. This fee is automatically added to your transaction.";
-    } else if (lowerText.contains('verify') || lowerText.contains('kyc') || lowerText.contains('approve')) {
-      response = "Users must be admin-approved via Citizenship ID upload before they can trade. You can upload your documents in the Profile tab.";
-    } else if (lowerText.contains('safety') || lowerText.contains('vault') || lowerText.contains('physical')) {
-      response = "All digital holdings are backed 1:1 by physical reserves in our secure vault. You can request physical delivery of your assets anytime.";
-    } else if (lowerText.contains('price') || lowerText.contains('predict') || lowerText.contains('buy now?')) {
-      response = "I cannot provide financial advice or price predictions. My role is to help you with the operational aspects of the Dhukuti platform.";
+
+    if (lowerText.contains('hour') || lowerText.contains('time') || lowerText.contains('when') || lowerText.contains('open') || lowerText.contains('close')) {
+      response = "Our trading hours are 11:00 AM to 5:00 PM Nepal Time, Sunday through Friday. We are closed on Saturdays and some public holidays.";
+    } 
+    else if (lowerText.contains('gold') || lowerText.contains('silver') || lowerText.contains('product') || lowerText.contains('24k') || lowerText.contains('metal')) {
+      response = "We offer 24K (99.9%) pure physical Gold and .999 Fine Silver. You can buy and sell these metals digitally, and they are backed 1:1 by physical reserves in our vault.";
+    } 
+    else if (lowerText.contains('fee') || lowerText.contains('charge') || lowerText.contains('cost') || lowerText.contains('tax') || lowerText.contains('commission')) {
+      response = "Dhukuti charges a 1% service fee on every buy and sell transaction. This covers the cost of secure vaulting, insurance, and platform operations.";
+    } 
+    else if (lowerText.contains('verify') || lowerText.contains('kyc') || lowerText.contains('approve') || lowerText.contains('document') || lowerText.contains('citizenship') || lowerText.contains('selfie')) {
+      response = "To start trading, you must complete KYC verification in the 'Profile' tab. You'll need to upload the front and back of your Citizenship ID and a selfie holding your ID. Our team usually approves it within 24-48 hours.";
+    } 
+    else if (lowerText.contains('safety') || lowerText.contains('vault') || lowerText.contains('physical') || lowerText.contains('secure') || lowerText.contains('delivery')) {
+      response = "Safety is our priority. Your assets are stored in a high-security vault and are fully insured. Once your holdings reach a standard weight, you can even request physical delivery to your doorstep!";
+    } 
+    else if (lowerText.contains('price') || lowerText.contains('rate') || lowerText.contains('how much')) {
+      response = "You can see the current live rates for Gold and Silver directly on the 'Trade' tab. These rates are updated frequently based on market prices.";
+    }
+    else if (lowerText.contains('hello') || lowerText.contains('hi') || lowerText.contains('hey') || lowerText.contains('help')) {
+      response = "Hello! I can help you with questions about trading hours, our gold and silver products, transaction fees, and the verification process. Ask away!";
     }
 
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         setState(() {
           _messages.add({'role': 'assistant', 'content': response});

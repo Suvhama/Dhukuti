@@ -159,67 +159,114 @@ class AdminDashboard extends StatelessWidget {
       builder: (context, market, _) {
         final isMsg = market.marketStatusMessage;
         final isOpen = market.isMarketOpen;
+        final screenWidth = MediaQuery.of(context).size.width;
 
         return Card(
-          color: isOpen ? Colors.green.shade50 : Colors.red.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isOpen ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Icon(isOpen ? Icons.check_circle : Icons.cancel, color: isOpen ? Colors.green : Colors.red),
-                    const SizedBox(width: 10),
-                    Text(isMsg, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isOpen ? Colors.green : Colors.red)),
+                    Icon(
+                      isOpen ? Icons.check_circle : Icons.cancel,
+                      color: isOpen ? Colors.green : Colors.red,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        isMsg,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                          fontWeight: FontWeight.bold,
+                          color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
                   children: [
-                    if (isOpen)
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.block),
-                        label: const Text("Close Today"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                        onPressed: () => _confirmAction(context, "Close Market Today?", () {
-                          market.setMarketOverride(date: DateTime.now(), isClosed: true);
-                        }),
+                    if (isOpen) ...[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _confirmAction(context, "Close Market Today?", () {
+                            market.setMarketOverride(date: DateTime.now(), isClosed: true);
+                          }),
+                          icon: const Icon(Icons.block, size: 18),
+                          label: const Text("Close Today"),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
                       ),
-                    
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.calendar_today),
-                      label: const Text("Schedule Closure"),
-                      onPressed: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(const Duration(days: 1)),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
-                        );
-                        if (date != null) {
-                           // ignore: use_build_context_synchronously
-                           _confirmAction(context, "Close Market on ${DateFormat('MMM d').format(date)}?", () {
-                             market.setMarketOverride(date: date, isClosed: true);
-                           });
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().add(const Duration(days: 1)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) {
+                            // ignore: use_build_context_synchronously
+                            _confirmAction(context, "Close Market on ${DateFormat('MMM d').format(date)}?", () {
+                              market.setMarketOverride(date: date, isClosed: true);
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.calendar_today, size: 18),
+                        label: const Text("Schedule"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (value) {
+                        if (value == 'reset') {
+                           _confirmAction(context, "Clear all manual overrides?", () {
+                            market.clearMarketOverride();
+                          });
                         }
                       },
-                    ),
-
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.refresh),
-                      label: const Text("Reset Overrides"),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade200, foregroundColor: Colors.black),
-                      onPressed: () => _confirmAction(context, "Clear all manual overrides?", () {
-                        market.clearMarketOverride();
-                      }),
+                      itemBuilder: (BuildContext context) => [
+                        const PopupMenuItem<String>(
+                          value: 'reset',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh, size: 20),
+                              SizedBox(width: 10),
+                              Text("Reset Overrides"),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                )
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         );
       },
